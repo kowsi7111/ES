@@ -1,0 +1,56 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include "DHT.h"
+#define DHTTYPE DHT11
+const int DHTPin = 4;
+DHT dht(DHTPin, DHTTYPE);
+const char* ssid = "vivo";
+const char* password = "asdfgasdfg";
+const char* host = "script.google.com";
+const int httpsPort = 443;
+WiFiClientSecure client;
+String GAS_ID = "AKfycbwrsrhKCxew1_O_EddGwgBh_qEEs6DH_d3skYdrHUfG-e_n_s0y9bLJQbgi-_7hzde4g";
+void setup() {
+ Serial.begin(115200);
+ dht.begin();
+ WiFi.begin(ssid, password);
+ pinMode(13, OUTPUT);
+ while (WiFi.status() != WL_CONNECTED) {
+ digitalWrite(13, LOW);
+ delay(250);
+ digitalWrite(13, HIGH);
+ delay(250);
+ }
+client.setInsecure();
+ Serial.print("Connected to WiFi, IP: ");
+ Serial.println(WiFi.localIP());
+}
+void loop() {
+ float h = dht.readHumidity();
+ float t = dht.readTemperature();
+ if (isnan(h) || isnan(t)) {
+ Serial.println("Failed to read from DHT sensor!");
+ return;
+ }
+Serial.printf("Temperature: %.1f °C, Humidity: %.1f %%\n", t, h);
+ sendData(t, h);
+}
+void sendData(float temp, float hum) {
+ if (!client.connect(host, httpsPort)) {
+ Serial.println("Connection failed");
+ return;
+ }
+String url = "/macros/s/" + GAS_ID + "/exec?temperature=" + String(temp) + "&humidity=" +
+String(hum);
+ client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+ "Host: " + host + "\r\n" +
+ "Connection: close\r\n\r\n");
+ while (client.connected()) {
+ String line = client.readStringUntil('\n');
+ if (line == "\r") break;
+ }
+ String response = client.readStringUntil('\n');
+ Serial.println(response.startsWith("{\"state\":\"success\"") ? "Data sent successfully!" : "send data
+sucessfully");
+ client.stop();
+}
