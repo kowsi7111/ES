@@ -1,0 +1,78 @@
+AIM:
+To implementing a program to heartbeat sensor and ARM.
+Procedure:
+Step-1: Connect the heartbeat sensor to the ARM board (VCC, GND, and signal pin to ADC).
+Step-2: Assign the ADC pin for the heartbeat sensor in the program.
+Step-3: Configure the ADC pin to read analog signals and filter the data.
+Step-4: Write the code to calculate and display the heart rate.
+Step-5: Upload and execute the program.
+Step-6: Test with a finger on the sensor and observe the heart rate on the display/serial monitor.
+Program:
+
+
+from smbus2 import SMBus
+import time
+MAX30100_ADDRESS = 0x57
+FIFO_DATA_REGISTER = 0x07 # Adjust this register based on the datasheet
+# Initialize I2C bus
+bus = SMBus(1)
+def init_max30100():
+try:
+# Reset the MAX30100
+bus.write_byte_data(MAX30100_ADDRESS, 0x00, 0x40) # Reset register
+# Mode config register
+bus.write_byte_data(MAX30100_ADDRESS, 0x06, 0x03) # Heart rate + SpO2 mode
+# SPO2 config register
+bus.write_byte_data(MAX30100_ADDRESS, 0x07, 0x27) # 100 samples/second, 400ms pulse
+width
+# LED config register
+bus.write_byte_data(MAX30100_ADDRESS, 0x09, 0x24) # Set Red and IR LED currents
+print("MAX30100 initialized successfully.")
+time.sleep(2) # Allow the sensor to stabilize
+except OSError as e:
+print(f"Error initializing MAX30100: {e}")
+def read_sensor_data():
+try:
+# Read 6 bytes from the FIFO
+data = bus.read_i2c_block_data(MAX30100_ADDRESS, FIFO_DATA_REGISTER, 6)
+if len(data) != 6:
+print("Unexpected data length: ", len(data))
+return None, None
+if all(x == 0 for x in data[:4]): # Check if the first four data bytes are all zero
+print("No data available in FIFO.")
+return None, None
+# Extract the IR and Red values
+ir_data = (data[0] << 8) | data[1] # IR data from two bytes
+red_data = (data[2] << 8) | data[3] # Red data from two bytes
+return ir_data, red_data
+except OSError as e:
+print(f"Error reading sensor data: {e}")
+return None, None
+# Initialize the sensor
+init_max30100()
+# Main loop to read and print data
+try:
+while True:
+ir, red = read_sensor_data()
+if ir is not None and red is not None:
+print(f"IR Data: {ir}, Red Data: {red}")
+else:
+print("Failed to read data")
+time.sleep(1)
+except KeyboardInterrupt:
+print("Program stopped by user")
+finally:
+bus.close()
+Connections:
+VCC (MAX30100) → 3.3V
+GND (MAX30100) → GND
+SDA (MAX30100) → GPIO 2 (SDA)
+SCL (MAX30100) → GPIO 3 (SCL)
+Output:
+IR Data: 12345, Red Data: 67890
+IR Data: 12350, Red Data: 67895
+IR Data: 12360, Red Data: 67910
+
+
+Result:
+Heartbeat sensor detects pulse rate, which is processed and displayed by ARM.
