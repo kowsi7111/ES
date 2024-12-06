@@ -1,0 +1,47 @@
+rom smbus2 import SMBus
+import time
+# ADXL345 I2C address
+ADXL345_ADDRESS = 0x53
+# Register Addresses
+DATA_FORMAT_REGISTER = 0x31
+POWER_CTL_REGISTER = 0x2D
+DATA_REGISTER_START = 0x32 # Starting register for XYZ data
+# Initialize I2C bus
+bus = SMBus(1)
+def init_adxl345():
+try:
+# Set the power control register to turn the device on
+bus.write_byte_data(ADXL345_ADDRESS, POWER_CTL_REGISTER, 0x08) # Measure mode
+# Set data format to full resolution, +/- 16g
+bus.write_byte_data(ADXL345_ADDRESS, DATA_FORMAT_REGISTER, 0x0B) # Full
+resolution
+print("ADXL345 initialized successfully.")
+except OSError as e:
+print(f"Error initializing ADXL345: {e}")
+def read_accelerometer_data():
+try:
+# Read 6 bytes of data (2 bytes for each axis: X, Y, Z)
+data = bus.read_i2c_block_data(ADXL345_ADDRESS, DATA_REGISTER_START, 6)
+# Convert the data to 16-bit values
+x = (data[1] << 8) | data[0] # X-axis data
+y = (data[3] << 8) | data[2] # Y-axis data
+z = (data[5] << 8) | data[4] # Z-axis data
+return x, y, z
+except OSError as e:
+print(f"Error reading accelerometer data: {e}")
+return None, None, None
+# Initialize the ADXL345
+init_adxl345()
+# Main loop to read and print data
+try:
+while True:
+x, y, z = read_accelerometer_data()
+if x is not None and y is not None and z is not None:
+print(f"X: {x}, Y: {y}, Z: {z}")
+else:
+print("Failed to read data")
+time.sleep(1)
+except KeyboardInterrupt:
+print("Program stopped by user")
+finally:
+bus.close()
