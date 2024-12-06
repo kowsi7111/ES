@@ -1,0 +1,68 @@
+AIM:
+To Interfacing an MQ-2 Gas Sensor with an LED
+Procedure:
+ Step-1: Connect the MQ-2 gas sensor to the microcontroller (VCC, GND, and signal pin to
+ADC).
+Step-2: Assign the signal pin and an LED pin in the program.
+Step-3: Initialize the signal pin as input and the LED pin as output.
+Step-4: Write the code to read gas levels and control the LED based on a threshold.
+Step-5: Upload and execute the program.
+Step-6: Test with gas exposure and observe LED behavior.
+Program:
+int redLed = 12;
+int greenLed = 11;
+int buzzer = 10;
+int smokeA0 = A5;
+// Your threshold value
+int sensorThres = 250;
+void setup() {
+pinMode(redLed, OUTPUT);
+pinMode(greenLed, OUTPUT);
+pinMode(buzzer, OUTPUT);
+pinMode(smokeA0, INPUT);
+Serial.begin(9600);
+}
+void loop() {
+int analogSensor = analogRead(smokeA0);
+Serial.print("Pin A0: ");
+Serial.println(analogSensor);
+// Checks if it has reached the threshold value
+if (analogSensor > sensorThres)
+{
+digitalWrite(redLed, HIGH);
+digitalWrite(greenLed, LOW);
+tone(buzzer, 1000, 200);
+}
+else
+{
+digitalWrite(redLed, LOW);
+digitalWrite(greenLed, HIGH);
+noTone(buzzer);
+}
+delay(100);
+}
+Connections:
+ MQ-2 Gas Sensor:
+VCC → 5V
+GND → GND
+AOUT → A5
+Red LED:
+Anode → Pin 12 (via 220Ω resistor)
+Cathode → GND
+ Green LED:
+ Anode → Pin 11 (via 220Ω resistor)
+ Cathode → GND
+Buzzer:
+Positive Terminal → Pin 10
+Negative Terminal → GND
+Output:
+Pin A0: 150
+Pin A0: 180
+Pin A0: 200
+Pin A0: 280
+Pin A0: 310
+Pin A0: 220
+LED light blinks
+
+Result:
+MQ-2 detects gas levels, turning on an LED when the threshold is surpassed.
